@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendWise — Expense Management Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Responsive Navigation Sidebar -->
+        <aside class="sidebar">
+            <div>
+                <div class="brand-badge">◆ SPENDWISE</div>
+                <h2 style="font-size:1.25rem;font-weight:700;">Expense OS</h2>
+                <p id="activeUserDisplay" style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">Single-User Ledger</p>
+
+                <ul class="nav-list">
+                    <li><button class="nav-btn active" data-view="dashboardView">📊 Dashboard</button></li>
+                    <li><button class="nav-btn" data-view="expensesView">💳 Transactions</button></li>
+                    <li><button class="nav-btn" data-view="budgetView">🎯 Monthly Budget</button></li>
+                    <li><button class="nav-btn" data-view="analyticsView">📈 Reports & Charts</button></li>
+                </ul>
+            </div>
+            <button id="logoutBtn" class="btn btn-secondary btn-full">Sign Out</button>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div>
+                    <h1 id="pageTitle" style="font-size:1.65rem;font-weight:700;">Financial Overview</h1>
+                    <p style="color:var(--text-secondary);font-size:0.9rem;">Real-time MySQL ledger & monthly budget tracking</p>
+                </div>
+                <div style="display:flex;gap:12px;align-items:center;">
+                    <input type="month" id="globalMonthPicker" class="form-control" style="width:170px;">
+                    <button class="btn btn-primary" id="openAddModalBtn">+ Quick Add Expense</button>
+                </div>
+            </header>
+
+            <div id="statusToast" class="alert-banner alert-success"></div>
+            <div id="budgetAlertBanner" class="alert-banner alert-warning"></div>
+
+            <!-- VIEW 1: DASHBOARD -->
+            <section id="dashboardView" class="view-section active">
+                <div class="kpi-grid">
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Monthly Spend</div>
+                        <div class="kpi-value" id="kpiMonthSpent">₹0.00</div>
+                        <div class="kpi-sub" id="kpiMonthLabel">Current selected month</div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Monthly Budget</div>
+                        <div class="kpi-value" id="kpiBudgetLimit">₹0.00</div>
+                        <div class="kpi-sub">Target threshold</div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Remaining Balance</div>
+                        <div class="kpi-value" id="kpiRemaining" style="color:var(--positive-green);">₹0.00</div>
+                        <div class="kpi-sub" id="kpiPercentUsed">0% of budget used</div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Highest Single Expense</div>
+                        <div class="kpi-value" id="kpiHighest">₹0.00</div>
+                        <div class="kpi-sub" id="kpiTotalCount">0 total transactions</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="glass-card section-card">
+                        <div class="section-header">
+                            <h3 class="section-title">Category-Wise Spending</h3>
+                        </div>
+                        <canvas id="dashCategoryChart" width="460" height="240"></canvas>
+                    </div>
+                    <div class="glass-card section-card">
+                        <div class="section-header">
+                            <h3 class="section-title">Monthly Spending Trend</h3>
+                        </div>
+                        <canvas id="dashMonthlyChart" width="460" height="240"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Recent Transactions</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Method</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: EXPENSES & FILTERS -->
+            <section id="expensesView" class="view-section">
+                <div class="glass-card section-card">
+                    <div class="section-header">
+                        <h3 class="section-title">Search, Filter & Manage Expenses</h3>
+                    </div>
+                    <div class="filter-bar">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search description, category, or notes...">
+                        <select id="filterCategory" class="form-control">
+                            <option value="All">All Categories</option>
+                            <option value="Food & Dining">Food & Dining</option>
+                            <option value="Tech & Software">Tech & Software</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Education">Education</option>
+                            <option value="Bills & Utilities">Bills & Utilities</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="date" id="filterFromDate" class="form-control" title="From Date">
+                        <input type="date" id="filterToDate" class="form-control" title="To Date">
+                        <select id="sortSelect" class="form-control">
+                            <option value="date_desc">Newest First</option>
+                            <option value="date_asc">Oldest First</option>
+                            <option value="amount_desc">Amount: High to Low</option>
+                            <option value="amount_asc">Amount: Low to High</option>
+                        </select>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Category</th>
+                                    <th>Payment</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allExpensesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 3: MONTHLY BUDGET -->
+            <section id="budgetView" class="view-section">
+                <div class="glass-card section-card" style="max-width:640px;">
+                    <h3 class="section-title" style="margin-bottom:14px;">Configure Monthly Budget</h3>
+                    <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:20px;">
+                        Set your target spending cap for the selected month. SpendWise will automatically warn you when spending approaches or exceeds 100%.
+                    </p>
+                    <form id="budgetForm">
+                        <div class="form-group">
+                            <label class="form-label" for="budgetInput">Monthly Budget Limit (₹)</label>
+                            <input type="number" step="0.01" id="budgetInput" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Monthly Budget</button>
+                    </form>
+
+                    <div style="margin-top:28px;">
+                        <div style="display:flex;justify-content:space-between;font-size:0.9rem;">
+                            <span id="budgetProgressLabel">0% Utilized</span>
+                            <span id="budgetNumbersLabel">₹0 / ₹0</span>
+                        </div>
+                        <div class="progress-track">
+                            <div id="budgetProgressBar" class="progress-fill" style="width:0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: ANALYTICS & REPORTS -->
+            <section id="analyticsView" class="view-section">
+                <div class="kpi-grid">
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">All-Time Total Spend</div>
+                        <div class="kpi-value" id="anaTotalAllTime">₹0.00</div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Average Transaction</div>
+                        <div class="kpi-value" id="anaAverage">₹0.00</div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Peak Expense</div>
+                        <div class="kpi-value" id="anaHighest">₹0.00</div>
+                    </div>
+                    <div class="glass-card kpi-card">
+                        <div class="kpi-label">Recorded Transactions</div>
+                        <div class="kpi-value" id="anaCount">0</div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="glass-card section-card">
+                        <h3 class="section-title" style="margin-bottom:16px;">Category Breakdown</h3>
+                        <canvas id="anaCategoryChart" width="460" height="240"></canvas>
+                    </div>
+                    <div class="glass-card section-card">
+                        <h3 class="section-title" style="margin-bottom:16px;">Monthly History</h3>
+                        <canvas id="anaMonthlyChart" width="460" height="240"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ADD / EDIT EXPENSE MODAL -->
+    <div class="modal-backdrop" id="expenseModal">
+        <div class="glass-card modal-card">
+            <h3 id="modalTitle" style="font-size:1.25rem;margin-bottom:18px;">Add New Expense</h3>
+            <form id="expenseForm">
+                <input type="hidden" id="expenseId">
+                <div class="form-group">
+                    <label class="form-label" for="expTitle">Description / Title</label>
+                    <input type="text" id="expTitle" class="form-control" placeholder="e.g., AWS Hosting or Dinner" required>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label" for="expCategory">Category</label>
+                        <select id="expCategory" class="form-control" required>
+                            <option value="Food & Dining">Food & Dining</option>
+                            <option value="Tech & Software">Tech & Software</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Education">Education</option>
+                            <option value="Bills & Utilities">Bills & Utilities</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="expMethod">Payment Method</label>
+                        <select id="expMethod" class="form-control">
+                            <option value="UPI">UPI</option>
+                            <option value="Card">Debit / Credit Card</option>
+                            <option value="Cash">Cash</option>
+                            <option value="NetBanking">NetBanking</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label" for="expAmount">Amount (₹)</label>
+                        <input type="number" step="0.01" id="expAmount" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="expDate">Date</label>
+                        <input type="date" id="expDate" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="expNotes">Notes (Optional)</label>
+                    <input type="text" id="expNotes" class="form-control" placeholder="Optional reference note">
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                    <button type="button" class="btn btn-secondary" id="closeModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="modal-backdrop" id="deleteModal">
+        <div class="glass-card modal-card" style="max-width:400px;">
+            <h3 style="font-size:1.2rem;margin-bottom:10px;">Confirm Deletion</h3>
+            <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:22px;">
+                Are you sure you want to permanently remove this expense from your MySQL ledger?
+            </p>
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Record</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

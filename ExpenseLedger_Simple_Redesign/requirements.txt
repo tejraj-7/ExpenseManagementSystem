@@ -1,0 +1,11 @@
+```text
+# SpendWise Project Environment & Dependencies
+
+## Software & Runtimes
+* Java SE Development Kit (JDK) 17+ (Eclipse Adoptium recommended)
+* Apache Tomcat 10.1.x (Jakarta Servlet API 6.0+)
+* MySQL Server 8.x / MySQL Workbench
+
+## Required Library JARs (Place in Tomcat lib or project build path)
+* servlet-api.jar (Included with Apache Tomcat /lib)
+* mysql-connector-j-9.x.x.jar (MySQL JDBC Driver)

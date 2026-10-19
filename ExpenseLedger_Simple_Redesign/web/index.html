@@ -1,0 +1,196 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendWise — Sign In & Setup</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="login-wrapper">
+        <section class="glass-card login-card">
+            <div class="brand-badge">◆ SPENDWISE PERSONAL LEDGER</div>
+            <h1 class="brand-title" id="authHeading">Welcome back</h1>
+            <p class="brand-subtitle" id="authSubheading">Sign in to your single-user finance & expense workspace.</p>
+
+            <div id="authAlert" class="alert-banner alert-error" role="alert"></div>
+
+            <!-- SIGN IN FORM -->
+            <form id="loginForm" autocomplete="on">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input class="form-control" type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input class="form-control" type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-pass-btn" data-target="password">Show</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+                    Sign In to Dashboard
+                </button>
+
+                <div class="auth-switch">
+                    New here? <a id="showRegisterLink">Create an account</a>
+                </div>
+            </form>
+
+            <!-- CREATE AN ACCOUNT FORM -->
+            <form id="registerForm" style="display:none;" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label" for="regUsername">Choose Username</label>
+                    <input class="form-control" type="text" id="regUsername" placeholder="e.g., AshBron_07 or Kushal" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="regPassword">Create Password</label>
+                    <div class="input-wrapper">
+                        <input class="form-control" type="password" id="regPassword" placeholder="Create a strong password" required>
+                        <button type="button" class="toggle-pass-btn" data-target="regPassword">Show</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <input class="form-control" type="password" id="regConfirmPassword" placeholder="Re-enter your password" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" id="registerBtn">
+                    Create Account
+                </button>
+
+                <div class="auth-switch">
+                    Already have an account? <a id="showLoginLink">Sign in here</a>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        // Check if redirected with a success registration message in URL query
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('registered') === 'success') {
+            const alertBox = document.getElementById('authAlert');
+            alertBox.textContent = 'Account created successfully! Please sign in below.';
+            alertBox.className = 'alert-banner alert-success';
+            alertBox.style.display = 'block';
+        }
+
+        document.querySelectorAll('.toggle-pass-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.target);
+                const isPass = input.type === 'password';
+                input.type = isPass ? 'text' : 'password';
+                btn.textContent = isPass ? 'Hide' : 'Show';
+            });
+        });
+
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const authHeading = document.getElementById('authHeading');
+        const authSubheading = document.getElementById('authSubheading');
+        const authAlert = document.getElementById('authAlert');
+
+        function showAlert(msg, isSuccess = false) {
+            authAlert.textContent = msg;
+            authAlert.className = 'alert-banner ' + (isSuccess ? 'alert-success' : 'alert-error');
+            authAlert.style.display = 'block';
+        }
+
+        document.getElementById('showRegisterLink').addEventListener('click', () => {
+            authAlert.style.display = 'none';
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            authHeading.textContent = 'Create an account';
+            authSubheading.textContent = 'Set up your personal SpendWise credentials.';
+        });
+
+        document.getElementById('showLoginLink').addEventListener('click', () => {
+            authAlert.style.display = 'none';
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            authHeading.textContent = 'Welcome back';
+            authSubheading.textContent = 'Sign in to your single-user finance & expense workspace.';
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authAlert.style.display = 'none';
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Verifying credentials...';
+
+            const params = new URLSearchParams({
+                action: 'login',
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            });
+
+            try {
+                const res = await fetch('api', { method: 'POST', body: params });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    window.location.href = data.redirect || 'app.html';
+                } else {
+                    showAlert(data.message || 'Invalid username or password.');
+                }
+            } catch (err) {
+                showAlert('Cannot reach backend server. Ensure MySQL and Tomcat are running.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In to Dashboard';
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authAlert.style.display = 'none';
+
+            const u = document.getElementById('regUsername').value.trim();
+            const p1 = document.getElementById('regPassword').value;
+            const p2 = document.getElementById('regConfirmPassword').value;
+
+            if (p1 !== p2) {
+                showAlert('Passwords do not match. Please re-enter.');
+                return;
+            }
+            if (p1.length < 4) {
+                showAlert('Password must be at least 4 characters long.');
+                return;
+            }
+
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            const params = new URLSearchParams({
+                action: 'register',
+                username: u,
+                password: p1
+            });
+
+            try {
+                const res = await fetch('api', { method: 'POST', body: params });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    // Redirect back to login page with success flag
+                    window.location.href = data.redirect || 'index.html?registered=success';
+                } else {
+                    showAlert(data.message || 'Could not create account.');
+                }
+            } catch (err) {
+                showAlert('Server error while creating account.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        });
+    </script>
+</body>
+</html>
