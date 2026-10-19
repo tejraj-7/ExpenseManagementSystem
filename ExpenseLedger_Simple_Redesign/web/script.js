@@ -205,7 +205,7 @@ function setupModalsAndForms() {
     });
 }
 
-window.openEditModal = function(id) {
+window.openEditModal = function (id) {
     const item = currentExpenses.find(e => e.id === id);
     if (!item) return;
     document.getElementById('modalTitle').textContent = 'Edit Expense';
@@ -219,7 +219,7 @@ window.openEditModal = function(id) {
     document.getElementById('expenseModal').style.display = 'flex';
 };
 
-window.openDeleteModal = function(id) {
+window.openDeleteModal = function (id) {
     pendingDeleteId = id;
     document.getElementById('deleteModal').style.display = 'flex';
 };
