@@ -1,0 +1,5 @@
+# Exclude web front-end files and directories from GitHub language statistics
+web/ linguist-vendored
+*.html linguist-documentation
+*.css linguist-documentation
+*.js linguist-documentation
